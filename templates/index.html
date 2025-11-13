@@ -1,0 +1,150 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Mini To-Do</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:40px;max-width:720px}
+    h1{margin:0 0 10px}
+    form{display:flex;gap:8px;margin:10px 0 20px}
+    input,button{padding:10px}
+    ul{list-style:none;padding:0;margin:0}
+    li{display:flex;gap:12px;justify-content:space-between;align-items:center;border:1px solid #eee;border-radius:10px;padding:10px;margin-bottom:8px}
+    .left{display:flex;gap:10px;align-items:center;flex:1}
+    .fecha{color:#666;font-size:12px}
+    .titulo{display:block}
+    .muted{color:#666}
+    .acciones{display:flex;gap:6px}
+    .done strong{ text-decoration: line-through; color:#666 }
+    .pill{font-size:12px;border:1px solid #eee;padding:2px 8px;border-radius:999px}
+    button.rm{background:#ffefef;border:1px solid #ffcaca}
+    button.save{background:#eaffe1;border:1px solid #c8f4be}
+    .editbox{display:flex;gap:6px;flex:1}
+    .editbox input{flex:1}
+  </style>
+</head>
+<body>
+  <h1>📝 Mini To-Do <span id="estado" class="muted"></span></h1>
+  <form id="form">
+    <input id="texto" placeholder="Añade una tarea..." autofocus />
+    <button>Añadir</button>
+  </form>
+  <ul id="lista"></ul>
+
+<script>
+const form = document.getElementById("form");
+const texto = document.getElementById("texto");
+const lista = document.getElementById("lista");
+const estado = document.getElementById("estado");
+
+async function cargar(){
+  const r = await fetch("/api/tareas");
+  const data = await r.json();
+  render(data.data);
+}
+
+function liView(t){
+  const li = document.createElement("li");
+  if(t.done) li.classList.add("done");
+
+  const left = document.createElement("div");
+  left.className = "left";
+
+  const chk = document.createElement("input");
+  chk.type = "checkbox";
+  chk.checked = !!t.done;
+  chk.onchange = async ()=>{
+    await fetch("/api/tareas/"+t.id, {
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ done: chk.checked })
+    });
+    cargar();
+  };
+
+  const textWrap = document.createElement("div");
+  const strong = document.createElement("strong");
+  strong.className = "titulo";
+  strong.textContent = t.texto;
+  const small = document.createElement("div");
+  small.className = "fecha";
+  small.textContent = "Creada: " + new Date(t.creada).toLocaleString();
+  textWrap.appendChild(strong); textWrap.appendChild(small);
+
+  left.appendChild(chk); left.appendChild(textWrap);
+
+  const acciones = document.createElement("div");
+  acciones.className = "acciones";
+  const bEdit = document.createElement("button");
+  bEdit.textContent = "Editar";
+  bEdit.type = "button";
+  bEdit.onclick = ()=> li.replaceWith(liEdit(t));
+
+  const bDel = document.createElement("button");
+  bDel.textContent = "Borrar";
+  bDel.className = "rm";
+  bDel.type = "button";
+  bDel.onclick = async ()=>{
+    await fetch("/api/tareas/"+t.id, { method:"DELETE" });
+    cargar();
+  };
+
+  acciones.appendChild(bEdit); acciones.appendChild(bDel);
+  li.appendChild(left); li.appendChild(acciones);
+  return li;
+}
+
+function liEdit(t){
+  const li = document.createElement("li");
+  const wrap = document.createElement("div");
+  wrap.className = "editbox";
+  const inp = document.createElement("input");
+  inp.value = t.texto; inp.maxLength = 200;
+  const save = document.createElement("button");
+  save.textContent = "Guardar"; save.className = "save"; save.type="button";
+  const cancel = document.createElement("button");
+  cancel.textContent = "Cancelar"; cancel.type="button";
+
+  save.onclick = async ()=>{
+    const nuevo = inp.value.trim();
+    if(!nuevo) return;
+    await fetch("/api/tareas/"+t.id, {
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ texto: nuevo })
+    });
+    cargar();
+  };
+  cancel.onclick = ()=> { li.replaceWith(liView(t)); };
+
+  wrap.appendChild(inp); wrap.appendChild(save); wrap.appendChild(cancel);
+  li.appendChild(wrap);
+  return li;
+}
+
+function render(items){
+  lista.innerHTML = "";
+  estado.textContent = items.length ? `(${items.length})` : "(vacío)";
+  if(!items.length) return;
+  for(const t of items){
+    lista.appendChild(liView(t));
+  }
+}
+
+form.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const txt = texto.value.trim();
+  if(!txt) return;
+  await fetch("/api/tareas", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ texto: txt })
+  });
+  texto.value = "";
+  cargar();
+});
+
+cargar();
+</script>
+</body>
+</html>
