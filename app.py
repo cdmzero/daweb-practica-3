@@ -83,12 +83,8 @@ def index():
 @app.get("/api/tareas")
 def listar():
     """Obtiene la lista de todas las tareas."""
-    tareas_ordenadas = sorted(
-        TAREAS.values(), key=lambda x: x["id"]
-    )
-    tareas_formateadas = [
-        formatear_tarea(tarea) for tarea in tareas_ordenadas
-    ]
+    tareas_ordenadas = sorted(TAREAS.values(), key=lambda x: x["id"])
+    tareas_formateadas = [formatear_tarea(tarea) for tarea in tareas_ordenadas]
     return jsonify({"ok": True, "data": tareas_formateadas})
 
 
@@ -107,19 +103,13 @@ def crear_tarea():
     datos = request.get_json(silent=True) or {}
     texto = (datos.get("texto") or "").strip()
     if not texto:
-        return jsonify(
-            {"ok": False, "error": {"message": "texto requerido"}}
-        ), 400
+        return jsonify({"ok": False, "error": {"message": "texto requerido"}}), 400
     valido, mensaje = validar_datos(datos)
     if not valido:
-        return jsonify(
-            {"ok": False, "error": {"message": mensaje}}
-        ), 400
+        return jsonify({"ok": False, "error": {"message": mensaje}}), 400
     texto_datos = (datos.get("texto") or "").strip()
     if "texto" not in datos or len(texto_datos) == 0:
-        return jsonify(
-            {"ok": False, "error": {"message": "texto requerido"}}
-        ), 400
+        return jsonify({"ok": False, "error": {"message": "texto requerido"}}), 400
     id_tarea = next(IDS)
     nueva_tarea = {
         "id": id_tarea,
@@ -149,23 +139,17 @@ def actualizar_tarea(tid):
                     jsonify(
                         {
                             "ok": False,
-                            "error": {
-                                "message": "texto no puede estar vacío"
-                            },
+                            "error": {"message": "texto no puede estar vacío"},
                         }
                     ),
                     400,
                 )
             TAREAS[tid]["texto"] = texto
         if "done" in datos:
-            TAREAS[tid]["done"] = (
-                True if datos["done"] == True else False
-            )
+            TAREAS[tid]["done"] = True if datos["done"] == True else False
         return jsonify({"ok": True, "data": TAREAS[tid]})
     except Exception:
-        return jsonify(
-            {"ok": False, "error": {"message": "error al actualizar"}}
-        ), 400
+        return jsonify({"ok": False, "error": {"message": "error al actualizar"}}), 400
 
 
 @app.delete("/api/tareas/<int:tid>")
@@ -193,9 +177,7 @@ def mostrar_configuracion():
 @app.errorhandler(404)
 def not_found(e):
     """Maneja errores 404 (recurso no encontrado)."""
-    return jsonify(
-        {"ok": False, "error": {"message": "no encontrado"}}
-    ), 404
+    return jsonify({"ok": False, "error": {"message": "no encontrado"}}), 404
 
 
 if __name__ == "__main__":
