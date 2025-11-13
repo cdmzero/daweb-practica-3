@@ -36,9 +36,7 @@ def test_crear_tarea_api():
     app = app_module.app
     client = app.test_client()
 
-    respuesta = client.post(
-        "/api/tareas", json={"texto": "Probar test"}
-    )
+    respuesta = client.post("/api/tareas", json={"texto": "Probar test"})
     assert respuesta.status_code == 201
     datos = respuesta.get_json()
     assert datos["ok"] is True
